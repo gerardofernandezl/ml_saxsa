@@ -1,0 +1,29 @@
+
+#Levantar servicios
+
+start-spark.sh
+start-dfs.sh
+
+#Iniciar pyspark
+
+pyspark --master spark://hostSaxsa:7077
+
+#Codigo a ejecutar
+
+from pyspark.ml.regression import LinearRegression
+
+training = spark.read.format("libsvm").load("file:///usr/local/spark/data/mllib/sample_linear_regression_data.txt")
+
+lr = LinearRegression(maxIter=10, regParam=0.3, elasticNetParam=0.8)
+
+lrModel = lr.fit(training)
+
+print("Coefficients: %s" % str(lrModel.coefficients))
+
+trainingSummary = lrModel.summary
+
+trainingSummary.predictions.show()
+
+trainingSummary.residuals.show()
+
+print("RMSE: %f" % trainingSummary.rootMeanSquaredError)

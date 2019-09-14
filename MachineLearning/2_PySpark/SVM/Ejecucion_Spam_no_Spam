@@ -1,0 +1,58 @@
+=======  Ejercicio Spam, NoSpam con Python  =======
+
+PASO1 =========>
+		
+Levantar servicios de hadoop y spark
+start-dfs.sh
+start-spark.sh
+		
+PASO2 =========>
+		
+Crear carpeta Mllib en hadoop
+hdfs dfs -mkdir /FuentesMllib
+Subir archivos spam.txt y normal.txt a la carpeta FuentesMllib en hadoop
+hdfs dfs -copyFromLocal spam.txt /FuentesMllib
+hdfs dfs -copyFromLocal normal.txt /FuentesMllib
+		
+PASO3 =========>
+		
+Ejecutar el shell de python en spark
+pyspark --master spark://127.0.0.1:7077
+		
+PASO4 =========>
+
+Programa:
+			
+from pyspark.mllib.regression import LabeledPoint
+from pyspark.mllib.feature import HashingTF
+from pyspark.mllib.classification import SVMWithSGD
+		
+spam = sc.textFile("/FuentesMllib/spam.txt")
+normal = sc.textFile("/FuentesMllib/normal.txt")
+       			
+#Se crea una instancia HashingTF para asignar un numero hasta 10000 palabras diferentes 
+tf = HashingTF(numFeatures = 10000)
+
+#Se dividen los archivos por palabras y a cada palabra  se le aplica la transformacion a numero
+spamFeatures = spam.map(lambda email: tf.transform(email.split(" ")))
+normalFeatures = normal.map(lambda email: tf.transform(email.split(" ")))
+			
+#En este caso se crean conjuntos de datos con una estructura LabeledPoint se asigna 1 a spam y 0 a normal
+positiveExamples = spamFeatures.map(lambda features: LabeledPoint(1, features))
+negativeExamples = normalFeatures.map(lambda features: LabeledPoint(0, features))
+			
+#Se hace la Union de los LabeledPoint
+trainingData = positiveExamples.union(negativeExamples)
+		
+trainingData.cache()
+			
+#Ejecutar SVM con SGD para hacer entrenamiento
+model = SVMWithSGD.train(trainingData)
+
+			
+#Probamos para un ejemplo positivo de spam y luegouno normal
+#Aplicamos la misma transformación HashingTF para obtener los vectores y luego aplicamos el modelo
+posTest = tf.transform("Felicidades has ganado solo da clic ...".split(" "))
+negTest = tf.transform("Hola Israel ya empece con Spark Machine Learning ...".split(" "))
+print ("Prediction for positive test example: %g" % model.predict(posTest))
+print ("Prediction for negative test example: %g" % model.predict(negTest))

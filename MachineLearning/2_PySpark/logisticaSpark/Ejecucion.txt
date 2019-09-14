@@ -1,0 +1,13 @@
+###### Iniciar servicios de hadooop y spark #######
+start-dfs.sh
+start-spark.sh
+
+###### Subir archivos a hadoop ######
+hdfs dfs -put Food_Inspections1.csv Food_Inspections2.csv /
+
+##### Levantar servidor lily ######
+livy-server start
+
+##### Iniciar notebook jupyter #####
+jupyter notebook
+
